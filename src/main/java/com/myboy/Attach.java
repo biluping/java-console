@@ -5,6 +5,7 @@ import cn.hutool.core.util.ObjUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.http.HttpUtil;
 import cn.hutool.json.JSONUtil;
+import com.myboy.classloader.AgentClassLoader;
 import com.myboy.domain.ao.ExecAO;
 import com.sun.tools.attach.VirtualMachine;
 import com.sun.tools.attach.VirtualMachineDescriptor;
@@ -13,6 +14,7 @@ import org.jline.reader.LineReaderBuilder;
 import org.jline.terminal.TerminalBuilder;
 
 import java.io.File;
+import java.lang.reflect.Method;
 import java.net.URL;
 import java.nio.file.Paths;
 import java.security.CodeSource;
@@ -22,6 +24,32 @@ import java.util.List;
 
 public class Attach {
     public static void main(String[] args) throws Exception {
+
+        if (!Attach.class.getClassLoader().toString().startsWith(AgentClassLoader.namePrefix)) {
+            String jdkVersion = System.getProperty("java.version");
+            if (jdkVersion.startsWith("1.")) {
+                if (jdkVersion.startsWith("1.8")) {
+                    try {
+                        // custom class loader to load current jar and tools.jar
+                        AgentClassLoader customClassLoader = new AgentClassLoader(
+                                new URL[]{toolsJarUrl(), currentUrl()},
+                                ClassLoader.getSystemClassLoader().getParent()
+                        );
+                        Class<?> mainClass = Class.forName("com.myboy.Attach", true, customClassLoader);
+                        Method mainMethod = mainClass.getMethod("main", String[].class);
+                        mainMethod.invoke(null, (Object) args);
+                        return;
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                } else {
+                    System.out.println(jdkVersion + " is not supported");
+                    return;
+                }
+            }
+        }
+
+
         val terminal = TerminalBuilder.builder().build();
         val reader = LineReaderBuilder.builder()
                 .terminal(terminal)
@@ -72,11 +100,10 @@ public class Attach {
         if (!toolsJarFile.exists()) {
             throw new Exception("tools.jar not found at: " + toolsJarFile.getPath());
         }
-        URL toolsJarUrl = toolsJarFile.toURI().toURL();
-        return toolsJarUrl;
+        return toolsJarFile.toURI().toURL();
     }
 
-    private static URL currentUrl() throws Exception {
+    private static URL currentUrl() {
         ProtectionDomain domain = Attach.class.getProtectionDomain();
         CodeSource codeSource = domain.getCodeSource();
         return codeSource.getLocation();
