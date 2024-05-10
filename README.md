@@ -4,7 +4,7 @@
 ### 使用说明
 1、运行工具
 ```bash
-java -jar java-console-1.0.jar
+java -jar java-console-1.8.jar
 ```
 
 2、选择需要调试的 java 进程
