@@ -11,7 +11,6 @@ repositories {
 }
 
 dependencies {
-    println(System.getenv("JAVA_HOME"))
     testImplementation(platform("org.junit:junit-bom:5.10.0"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     implementation("cn.hutool:hutool-all:5.8.26")
