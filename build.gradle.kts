@@ -3,7 +3,7 @@ plugins {
 }
 
 group = "org.myboy"
-version = "1.8"
+version = "17"
 
 repositories {
     mavenLocal()
@@ -14,11 +14,10 @@ dependencies {
     testImplementation(platform("org.junit:junit-bom:5.10.0"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     implementation("cn.hutool:hutool-all:5.8.26")
-    implementation("io.javalin:javalin:4.6.8")
+    implementation("io.javalin:javalin:6.1.3")
     implementation("io.github.liubsyy:FindInstancesOfClass:1.0.3")
     implementation("org.codehaus.groovy:groovy-all:3.0.21")
     implementation("org.jline:jline:3.26.1")
-    compileOnly(files("lib/tools.jar"))
     implementation("org.projectlombok:lombok:1.18.32")
     annotationProcessor("org.projectlombok:lombok:1.18.32")
     implementation("com.fasterxml.jackson.core:jackson-databind:2.13.3")

@@ -2,14 +2,15 @@ package com.myboy;
 
 import cn.hutool.core.exceptions.ExceptionUtil;
 import cn.hutool.core.thread.ThreadUtil;
+import com.liubs.findinstances.jvmti.InstancesOfClass;
 import com.myboy.domain.ao.ExecAO;
+import groovy.lang.Binding;
+import groovy.lang.Closure;
+import groovy.lang.GroovyShell;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
 import lombok.SneakyThrows;
-import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
-import javax.script.ScriptException;
-import javax.script.SimpleBindings;
+
 import java.lang.instrument.Instrumentation;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
@@ -19,15 +20,22 @@ public class JavaConsoleAgent {
 
     private static Instrumentation instrumentation;
     private static final Pattern pattern = Pattern.compile("\\s*def\\s+(\\w+)\\s*=\\s*(.*)");
-    private static final SimpleBindings bindings = new SimpleBindings();
-    private static final ScriptEngine groovy = new ScriptEngineManager().getEngineByName("groovy");
+    private static Binding binding = null;
+    private static GroovyShell groovyShell = null;
     private static Javalin app = null;
 
-    private static void initBinds() {
+    private static void initGroovyShell() {
         try {
-            Object getFun = groovy.eval("{clazz -> com.liubs.findinstances.jvmti.InstancesOfClass.getInstances(Class.forName(\"$clazz\"))}");
-            bindings.put("get", getFun);
-        } catch (ScriptException e) {
+            // 定义一个函数
+            Closure<Object[]> getFunc = new Closure<Object[]>(null) {
+                public Object[] doCall(String clazzName) throws ClassNotFoundException {
+                    return InstancesOfClass.getInstances(Class.forName(clazzName));
+                }
+            };
+            binding = new Binding();
+            binding.setVariable("get", getFunc);
+            groovyShell = new GroovyShell(binding);
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
@@ -38,17 +46,15 @@ public class JavaConsoleAgent {
             return;
         }
         instrumentation = inst;
-        initBinds();
+        initGroovyShell();
         app = Javalin.create()
                 .post("/", JavaConsoleAgent::exec)
-                .get("/quit", ctx -> {
-                    new Thread(() -> {
-                        ThreadUtil.sleep(1, TimeUnit.SECONDS);
-                        app.stop();
-                        bindings.clear();
-                        instrumentation = null;
-                    }).start();
-                }).start(7070);
+                .get("/quit", ctx -> new Thread(() -> {
+                    ThreadUtil.sleep(1, TimeUnit.SECONDS);
+                    app.stop();
+                    initGroovyShell();
+                    instrumentation = null;
+                }).start()).start(7070);
     }
 
     @SneakyThrows
@@ -59,10 +65,10 @@ public class JavaConsoleAgent {
 
         try {
             if (matcher.find() && matcher.groupCount() == 2) {
-                bindings.put(matcher.group(1), groovy.eval(matcher.group(2), bindings));
+                binding.setVariable(matcher.group(1), groovyShell.evaluate(matcher.group(2)));
                 System.out.println("add variable: " + matcher.group(1));
             } else {
-                Object eval = groovy.eval(execAO.getScript(), bindings);
+                Object eval = groovyShell.evaluate(execAO.getScript());
                 if (eval != null) {
                     context.result(eval.toString());
                 }
