@@ -40,21 +40,23 @@ public class JavaConsoleAgent {
         }
     }
 
-    public static void agentmain(String args, Instrumentation inst) {
-        if (instrumentation != null) {
-            System.out.println("Already attached before");
-            return;
-        }
-        instrumentation = inst;
-        initGroovyShell();
-        app = Javalin.create()
-                .post("/", JavaConsoleAgent::exec)
-                .get("/quit", ctx -> new Thread(() -> {
-                    ThreadUtil.sleep(1, TimeUnit.SECONDS);
-                    app.stop();
-                    initGroovyShell();
-                    instrumentation = null;
-                }).start()).start(7070);
+    public static void agentmain(String args, Instrumentation inst) throws ClassNotFoundException {
+        Class<?> aClass = Class.forName("com.rabbit.DemoApplication");
+        System.out.println(aClass);
+//        if (instrumentation != null) {
+//            System.out.println("Already attached before");
+//            return;
+//        }
+//        instrumentation = inst;
+//        initGroovyShell();
+//        app = Javalin.create()
+//                .post("/", JavaConsoleAgent::exec)
+//                .get("/quit", ctx -> new Thread(() -> {
+//                    ThreadUtil.sleep(1, TimeUnit.SECONDS);
+//                    app.stop();
+//                    initGroovyShell();
+//                    instrumentation = null;
+//                }).start()).start(7070);
     }
 
     @SneakyThrows

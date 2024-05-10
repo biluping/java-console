@@ -21,6 +21,7 @@ dependencies {
     implementation("org.projectlombok:lombok:1.18.32")
     annotationProcessor("org.projectlombok:lombok:1.18.32")
     implementation("com.fasterxml.jackson.core:jackson-databind:2.13.3")
+    implementation("org.slf4j:slf4j-simple:2.0.10")
 }
 
 tasks.test {

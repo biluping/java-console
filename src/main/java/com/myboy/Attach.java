@@ -25,29 +25,29 @@ import java.util.List;
 public class Attach {
     public static void main(String[] args) throws Exception {
 
-//        if (!Attach.class.getClassLoader().toString().startsWith(AgentClassLoader.namePrefix)) {
-//            String jdkVersion = System.getProperty("java.version");
-//            if (jdkVersion.startsWith("1.")) {
-//                if (jdkVersion.startsWith("1.8")) {
-//                    try {
-//                        // custom class loader to load current jar and tools.jar
-//                        AgentClassLoader customClassLoader = new AgentClassLoader(
-//                                new URL[]{toolsJarUrl(), currentUrl()},
-//                                ClassLoader.getSystemClassLoader().getParent()
-//                        );
-//                        Class<?> mainClass = Class.forName("com.myboy.Attach", true, customClassLoader);
-//                        Method mainMethod = mainClass.getMethod("main", String[].class);
-//                        mainMethod.invoke(null, (Object) args);
-//                        return;
-//                    } catch (Exception e) {
-//                        e.printStackTrace();
-//                    }
-//                } else {
-//                    System.out.println(jdkVersion + " is not supported");
-//                    return;
-//                }
-//            }
-//        }
+        if (!Attach.class.getClassLoader().toString().startsWith(AgentClassLoader.namePrefix)) {
+            String jdkVersion = System.getProperty("java.version");
+            if (jdkVersion.startsWith("1.")) {
+                if (jdkVersion.startsWith("1.8")) {
+                    try {
+                        // custom class loader to load current jar and tools.jar
+                        AgentClassLoader customClassLoader = new AgentClassLoader(
+                                new URL[]{toolsJarUrl(), currentUrl()},
+                                ClassLoader.getSystemClassLoader().getParent()
+                        );
+                        Class<?> mainClass = Class.forName("com.myboy.Attach", true, customClassLoader);
+                        Method mainMethod = mainClass.getMethod("main", String[].class);
+                        mainMethod.invoke(null, (Object) args);
+                        return;
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                } else {
+                    System.out.println(jdkVersion + " is not supported");
+                    return;
+                }
+            }
+        }
 
 
         val terminal = TerminalBuilder.builder().build();
