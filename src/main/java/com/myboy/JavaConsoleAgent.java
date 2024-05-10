@@ -12,12 +12,15 @@ import io.javalin.http.Context;
 import lombok.SneakyThrows;
 
 import java.lang.instrument.Instrumentation;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class JavaConsoleAgent {
 
+    private static final Map<String, Class<?>> classMap = new HashMap<>();
     private static Instrumentation instrumentation;
     private static final Pattern pattern = Pattern.compile("\\s*def\\s+(\\w+)\\s*=\\s*(.*)");
     private static Binding binding = null;
@@ -28,8 +31,12 @@ public class JavaConsoleAgent {
         try {
             // 定义一个函数
             Closure<Object[]> getFunc = new Closure<Object[]>(null) {
-                public Object[] doCall(String clazzName) throws ClassNotFoundException {
-                    return InstancesOfClass.getInstances(Class.forName(clazzName));
+                public Object[] doCall(String clazzName) {
+                    Class<?> clazz = classMap.get(clazzName);
+                    if (clazz == null) {
+                        return new Object[0];
+                    }
+                    return InstancesOfClass.getInstances(clazz);
                 }
             };
             binding = new Binding();
@@ -40,23 +47,24 @@ public class JavaConsoleAgent {
         }
     }
 
-    public static void agentmain(String args, Instrumentation inst) throws ClassNotFoundException {
-        Class<?> aClass = Class.forName("com.rabbit.DemoApplication");
-        System.out.println(aClass);
-//        if (instrumentation != null) {
-//            System.out.println("Already attached before");
-//            return;
-//        }
-//        instrumentation = inst;
-//        initGroovyShell();
-//        app = Javalin.create()
-//                .post("/", JavaConsoleAgent::exec)
-//                .get("/quit", ctx -> new Thread(() -> {
-//                    ThreadUtil.sleep(1, TimeUnit.SECONDS);
-//                    app.stop();
-//                    initGroovyShell();
-//                    instrumentation = null;
-//                }).start()).start(7070);
+    public static void agentmain(String args, Instrumentation inst) {
+        if (instrumentation != null) {
+            System.out.println("Already attached before");
+            return;
+        }
+        for (Class<?> clazz : inst.getAllLoadedClasses()) {
+            classMap.put(clazz.getName(), clazz);
+        }
+        instrumentation = inst;
+        initGroovyShell();
+        app = Javalin.create()
+                .post("/", JavaConsoleAgent::exec)
+                .get("/quit", ctx -> new Thread(() -> {
+                    ThreadUtil.sleep(1, TimeUnit.SECONDS);
+                    app.stop();
+                    initGroovyShell();
+                    instrumentation = null;
+                }).start()).start(7070);
     }
 
     @SneakyThrows
